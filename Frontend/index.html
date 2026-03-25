@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CP Helper</title>
+
+    <link rel="icon" type="image/png" href="https://cdn.iconscout.com/icon/free/png-256/codeforces-3521352-2944796.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+    <div class="app-container">
+        <aside class="sidebar" id="sidebar">
+            <div class="logo-container" style="display: flex; align-items: center; padding: 15px 20px; gap: 15px;">
+                <button onclick="toggleSidebar()" style="background: none; border: none; color: #ccc; font-size: 20px; cursor: pointer; padding: 0;">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+                
+                <div class="brand-wrapper" onclick="window.location.href='index.html'" style="cursor: pointer; display: flex; align-items: center; gap: 10px">
+                    <img src="https://cdn.iconscout.com/icon/free/png-256/codeforces-3521352-2944796.png" alt="CF Logo" style="width: 25px; height: 25px; object-fit: contain;">
+                    
+                    <span id="logo-text" style="color: #FFD700; font-size: 22px; font-weight: bold;">CP Helper</span>
+                </div>
+            </div>
+            
+            <nav class="menu">
+                <a href="#" class="menu-item active" onclick="switchTab('visualizer')">
+                    <i class="fa-brands fa-slack"></i>
+                    <span class="menu-text">Algorithm Visualizer</span>
+                </a>
+                <a href="#" class="menu-item" onclick="switchTab('code_editor')">
+                    <i class="fa-solid fa-laptop"></i>
+                    <span class="menu-text">Code Editor</span>
+                </a>
+                <a href="#" class="menu-item" onclick="switchTab('test-gen')">
+                    <i class="fa-solid fa-bug"></i>
+                    <span class="menu-text">Test Generator</span>
+                </a>
+            </nav>
+        </aside>
+
+        <main class="content">
+            <div id="visualizer" class="tab-content active">
+                <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h2><i class="fa-brands fa-slack"></i> Algorithm Visualizer</h2>
+                    <div class="actions" style="display: flex; align-items: center; gap: 10px;">
+                        
+                        <select id="algo-select" class="custom-select">
+                            <option value="bfs">Tìm kiếm theo chiều rộng (BFS)</option>
+                            <option value="dfs">Tìm kiếm theo chiều sâu (DFS)</option>
+                            <option value="dijkstra">Tìm đường đi ngắn nhất (Dijkstra) </option>
+                        </select>
+
+                        <button class="btn" onclick="generateRandomWalls()" style="background-color: #7f8c8f; color: white">
+                            Tạo vật cản ngẫu nhiên
+                        </button>
+
+                        <button class="btn btn-primary" onclick="startAlgorithm()" style="background-color: green">Chạy thuật toán</button>
+                        <select id="speed-select" class="custom-select">
+                            <option value="fast">Tốc độ: Nhanh</option>
+                            <option value="normal" selected>Tốc độ: Thường</option>
+                            <option value="slow">Tốc độ: Chậm</option>
+                        </select>
+                        <button class="btn btn-secondary" onclick="resetGrid()" style="background-color: brown">Xóa bảng</button>
+                    </div>
+                </header>
+                
+                <div class="grid-legend" style="display: flex; justify-content: center; gap: 25px; margin-bottom: 16px; flex-wrap: wrap; padding: 8px; background-color: #252526; border-radius: 8px; border: 1px solid #333;">
+                    
+                    <div class="legend-item" style="display: flex; align-items: center; gap: 8px;">
+                        <div style="width: 20px; height: 20px; background-color: #2ecc71; border-radius: 4px; box-shadow: 0 0 5px rgba(46, 204, 113, 0.5);"></div>
+                        <span style="color: #ccc; font-size: 13px; font-weight: 600;">Điểm xuất phát</span>
+                    </div>
+
+                    <div class="legend-item" style="display: flex; align-items: center; gap: 8px;">
+                        <div style="width: 20px; height: 20px; background-color: #e74c3c; border-radius: 4px; box-shadow: 0 0 5px rgba(231, 76, 60, 0.5);"></div>
+                        <span style="color: #ccc; font-size: 13px; font-weight: 600;">Đích đến</span>
+                    </div>
+
+                    <div class="legend-item" style="display: flex; align-items: center; gap: 8px;">
+                        <div style="width: 20px; height: 20px; background-color: #7f8c8d; border-radius: 4px;"></div>
+                        <span style="color: #ccc; font-size: 13px; font-weight: 600;">Vật cản (Tường)</span>
+                    </div>
+
+                    <div class="legend-item" style="display: flex; align-items: center; gap: 8px;">
+                        <div style="width: 20px; height: 20px; background-color: #1e1e1e; border: 1px solid #444; border-radius: 4px;"></div>
+                        <span style="color: #ccc; font-size: 13px; font-weight: 600;">Ô trống</span>
+                    </div>
+
+                    <div class="legend-item" style="display: flex; align-items: center; gap: 8px;">
+                        <div style="width: 20px; height: 20px; background-color: #3498db; border-radius: 4px; opacity: 0.8;"></div>
+                        <span style="color: #ccc; font-size: 13px; font-weight: 600;">Đang duyệt</span>
+                    </div>
+
+                    <div class="legend-item" style="display: flex; align-items: center; gap: 8px;">
+                        <div style="width: 20px; height: 20px; background-color: #f1c40f; border-radius: 4px; box-shadow: 0 0 8px rgba(241, 196, 15, 0.6);"></div>
+                        <span style="color: #ccc; font-size: 13px; font-weight: 600;">Đường đi tìm được</span>
+                    </div>
+
+                </div>
+
+                <div class="visualizer-grid" id="gridContainer"></div>
+            </div>
+
+            <div id="code_editor" class="tab-content">
+                <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h2><i class="fa-solid fa-laptop"></i> Code Editor</h2>
+                    <div class="actions">
+                        <select id="lang-select" class="custom-select" onchange="changeLanguage()">
+                            <option value="cpp">C++</option>
+                            <option value="java">Java</option>
+                            <option value="python">Python</option>
+                        </select>
+                        <button id="btnRun" class="btn btn-primary" onclick="runCode()" style="background-color: green; color: white; padding: 8px 25px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer;">
+                            <i class="fa-solid fa-play"></i> Run
+                        </button>
+                    </div>
+                </header>
+                
+                <div class="ide-container" style="display: flex; height: 85vh;">
+                    <div class="editor-section" style="flex: 6; display: flex; flex-direction: column;">
+                        
+                        <div style="background: #252526; padding: 10px 15px; border: 1px solid #444; border-bottom: none; display: flex; align-items: center; justify-content: space-between;">
+                            <span id="file-name" style="color: #cccccc; font-size: 13px; font-weight: bold;">Main.cpp</span>
+                            <span id="lang-label" style="color: #cccccc; font-size: 13px; font-weight: bold;">C++</span>
+                        </div>
+                        
+                        <div id="monaco-editor" style="flex: 1; border: 1px solid #444;"></div>
+                    </div>
+
+                    <div class="io-section" style="flex: 4; display: flex; flex-direction: column;">
+                        
+                        <div class="input-area" style="flex: 1; display: flex; flex-direction: column;">
+                            <div style="background: #252526; padding: 10px 15px; border: 1px solid #444; border-bottom: none; display: flex; align-items: center; justify-content: space-between;">
+                                <span style="color: #cccccc; font-size: 13px; font-weight: bold;">Input</span>
+                            </div>
+                            <textarea id="user-input" placeholder="Nhập input cho chương trình vào đây..." style="flex: 1; background: #1e1e1e; color: #fff; border: 1px solid #444; padding: 10px; resize: none; font-family: 'Consolas', monospace; outline: none;"></textarea>
+                        </div>
+
+                        <div class="output-area" style="flex: 1; display: flex; flex-direction: column;">
+                            <div style="background: #252526; padding: 10px 15px; border: 1px solid #444; border-bottom: none; display: flex; align-items: center; justify-content: space-between;">
+                                <span style="color: #cccccc; font-size: 13px; font-weight: bold;">Output</span>
+                            </div>
+                            <pre id="output-console" style="flex: 1; background: #1e1e1e; color: #fff; border: 1px solid #444; padding: 10px; overflow-y: auto; font-family: 'Consolas', monospace; margin: 0; outline: none;">Nhấn nút Run để hiển thị kết quả...</pre>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+            <div id="test-gen" class="tab-content">
+                <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h2><i class="fa-solid fa-bug"></i> Test Generator</h2>
+                    <div class="actions" style="display: flex; gap: 15px; align-items: center;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <label style="color: #ddd; font-size: 14px; font-weight: bold;">Số lượng Test:</label>
+                            <input type="number" id="test-count" value="100" min="1" max="10000" style="background: #1e1e1e; color: #fff; border: 1px solid #444; padding: 8px 10px; width: 80px; border-radius: 4px; outline: none; font-family: 'Consolas', monospace;">
+                        </div>
+                        
+                        <button id="btnRun" class="btn btn-primary" onclick="runCode()" style="background-color: green; color: white; padding: 8px 25px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer;">
+                            <i class="fa-solid fa-play"></i> Run
+                        </button>
+                    </div>
+                </header>
+
+                <div class="stress-editors-container" style="display: flex; gap: 10px; height: 55vh; margin-bottom: 10px;">
+                    
+                    <div style="flex: 1; display: flex; flex-direction: column;">
+                        <div style="background: #252526; padding: 8px 12px; border: 1px solid #444; border-bottom: none;">
+                            <span style="color: #e2a0ff; font-size: 13px; font-weight: bold;"> Generator (trình sinh test)</span>
+                        </div>
+                        <div id="editor-gen" style="flex: 1; border: 1px solid #444; background: #1e1e1e; color: #888; padding: 10px;"></div>
+                    </div>
+
+                    <div style="flex: 1; display: flex; flex-direction: column;">
+                        <div style="background: #252526; padding: 8px 12px; border: 1px solid #444; border-bottom: none;">
+                            <span style="color: #2ecc71; font-size: 13px; font-weight: bold;"> Brute-force (thuật duyệt trâu)</span>
+                        </div>
+                        <div id="editor-brute" style="flex: 1; border: 1px solid #444; background: #1e1e1e; color: #888; padding: 10px;"></div>
+                    </div>
+
+                    <div style="flex: 1; display: flex; flex-direction: column;">
+                        <div style="background: #252526; padding: 8px 12px; border: 1px solid #444; border-bottom: none;">
+                            <span style="color: yellow; font-size: 13px; font-weight: bold;"> Optimized (thuật tối ưu)</span>
+                        </div>
+                        <div id="editor-opt" style="flex: 1; border: 1px solid #444; background: #1e1e1e; color: #888; padding: 10px;"></div>
+                    </div>
+
+                </div>
+
+                <div class="stress-output-container" style="height: 25vh; display: flex; flex-direction: column;">
+                    <div style="background: #252526; padding: 8px 12px; border: 1px solid #444; border-bottom: none; display: flex; justify-content: space-between;">
+                        <span style="color: cyan; font-size: 13px; font-weight: bold;"> Console</span>
+                    </div>
+                    <pre id="stress-console" style="flex: 1; background: #1e1e1e; color: #ccc; border: 1px solid #444; padding: 15px; overflow-y: auto; font-family: 'Consolas', monospace; margin: 0; outline: none;">Nhấn nút Run để hiển thị kết quả...</pre>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.36.1/min/vs/loader.min.js"></script>
+
+    <script src="js/main.js"></script>
+    <script src="js/visualizer.js"></script>
+    <script src="js/editor.js"></script>
+</body>
+
+</html>
