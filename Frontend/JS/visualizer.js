@@ -16,22 +16,6 @@ let draggingNodeId = null;
 // Khởi tạo đồ thị mẫu lúc mới vào trang
 function initGraph() {
     clearGraph();
-    let w = container.clientWidth || 800;
-    let h = container.clientHeight || 550;
-
-    let n0 = addNode(w * 0.15, h * 0.5, 'start');
-    let n1 = addNode(w * 0.85, h * 0.5, 'target');
-    let n2 = addNode(w * 0.35, h * 0.25);
-    let n3 = addNode(w * 0.35, h * 0.75);
-    let n4 = addNode(w * 0.65, h * 0.25);
-    let n5 = addNode(w * 0.65, h * 0.75);
-    let n6 = addNode(w * 0.5, h * 0.5);
-
-    addEdge(n0, n2); addEdge(n0, n3);
-    addEdge(n2, n6); addEdge(n3, n6);
-    addEdge(n2, n4); addEdge(n3, n5);
-    addEdge(n6, n4); addEdge(n6, n5);
-    addEdge(n4, n1); addEdge(n5, n1);
 }
 
 // Xóa trắng bảng vẽ
@@ -333,5 +317,52 @@ function animateShortestPath(pathNodes) {
 
             if (i === pathNodes.length - 1) isAnimating = false;
         }, 100 * i); 
+    }
+}
+
+// --- HÀM TẠO ĐỒ THỊ NGẪU NHIÊN ---
+function generateRandomGraph() {
+    if (isAnimating) return;
+    
+    // 1. Dọn sạch bảng cũ
+    clearGraph();
+
+    let w = container.clientWidth || 800;
+    let h = container.clientHeight || 550;
+    const padding = 50; // Giữ khoảng cách an toàn viền để đỉnh không bị tràn ra ngoài
+
+    // 2. Random số lượng đỉnh từ 6 đến 12
+    const numNodes = Math.floor(Math.random() * 7) + 6; 
+    let createdNodes = [];
+
+    // 3. Sinh tọa độ và tạo đỉnh
+    for (let i = 0; i < numNodes; i++) {
+        let x = Math.floor(Math.random() * (w - 2 * padding)) + padding;
+        let y = Math.floor(Math.random() * (h - 2 * padding)) + padding;
+        
+        // Đỉnh đầu tiên là Xuất phát, đỉnh thứ hai là Đích, còn lại là Bình thường
+        let type = 'normal';
+        if (i === 0) type = 'start';
+        if (i === 1) type = 'target';
+
+        let id = addNode(x, y, type);
+        createdNodes.push(id);
+    }
+
+    // 4. Nối các cạnh ngẫu nhiên (Đảm bảo đồ thị luôn liên thông, không có đỉnh mồ côi)
+    for (let i = 1; i < numNodes; i++) {
+        // Nối đỉnh hiện tại với 1 đỉnh ngẫu nhiên được sinh ra trước đó
+        let randomPrev = Math.floor(Math.random() * i);
+        addEdge(createdNodes[i], createdNodes[randomPrev]);
+    }
+
+    // 5. Ném thêm một vài cạnh ngẫu nhiên nữa cho đồ thị trông chằng chịt, phức tạp hơn
+    let extraEdges = Math.floor(numNodes * 1.5);
+    for (let i = 0; i < extraEdges; i++) {
+        let u = createdNodes[Math.floor(Math.random() * numNodes)];
+        let v = createdNodes[Math.floor(Math.random() * numNodes)];
+        if (u !== v) {
+            addEdge(u, v);
+        }
     }
 }
