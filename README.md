@@ -1,8 +1,8 @@
-# 🚀 CP Helper - Algorithm Visualizer & Online IDE
+# CP Helper - Algorithm Visualizer & Online IDE
 
 Một nền tảng web đa nhiệm được xây dựng nhằm hỗ trợ cộng đồng Lập trình thi đấu (Competitive Programming) và trực quan hóa các cấu trúc dữ liệu - thuật toán cơ bản. Dự án được thực hiện trong khuôn khổ môn Thực tập cơ sở tại PTIT.
 
-## ✨ Tính năng nổi bật
+## Tính năng nổi bật
 
 ### 1. Trực quan hóa thuật toán (Algorithm Visualizer)
 * **Mô phỏng đồ thị:** Hỗ trợ trực quan hóa các thuật toán tìm đường phổ biến như **BFS**, **DFS** và **Dijkstra** trên ma trận lưới.
@@ -19,7 +19,7 @@ Một nền tảng web đa nhiệm được xây dựng nhằm hỗ trợ cộng
 * Cung cấp không gian làm việc đa luồng với 3 trình soạn thảo độc lập: Trình sinh test (Generator), Giải pháp Brute-force và Giải pháp Tối ưu (Optimized).
 * *Sắp ra mắt: Kết nối Piston API để biên dịch và chấm chéo mã nguồn tự động.*
 
-## 🛠️ Công nghệ sử dụng
+## Công nghệ sử dụng
 * **Frontend:** HTML5, CSS3, Vanilla JavaScript (Không sử dụng Framework để tối ưu hiệu năng).
 * **Thư viện bên thứ ba:** [Monaco Editor](https://microsoft.github.io/monaco-editor/) (via CDN).
 * **API (Dự kiến):** Piston API (Thực thi mã nguồn từ xa).
