@@ -46,35 +46,45 @@
         <main class="content">
             <div id="visualizer" class="tab-content active">
                 <div id="visualizer" class="tab-content active">
-                    <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                        <h2><i class="fa-brands fa-slack"></i> Algorithm Visualizer</h2>
+                    <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        
+                        <div style="display: flex; align-items: center; gap: 15px;">
+                            <h2><i class="fa-brands fa-slack"></i> Algo Visualizer</h2>
+                            
+                            <select id="algo-select" class="custom-select" style="font-weight: bold; width: 95px;" 
+                                onfocus="this.style.width='auto'; this.options[0].text='Tìm kiếm theo chiều rộng (BFS)'; this.options[1].text='Tìm kiếm theo chiều sâu (DFS)'; this.options[2].text='Tìm đường đi ngắn nhất (Dijkstra)';" 
+                                onblur="this.style.width='95px'; this.options[0].text='BFS'; this.options[1].text='DFS'; this.options[2].text='Dijkstra'; this.dataset.clicks=0;" 
+                                onchange="this.blur()"
+                                onclick="this.dataset.clicks = Number(this.dataset.clicks || 0) + 1; if(this.dataset.clicks > 1) this.blur();">
+                                <option value="bfs">BFS</option>
+                                <option value="dfs">DFS</option>
+                                <option value="dijkstra">Dijkstra</option>
+                            </select>
+
+                            <select id="speed-select" class="custom-select" style="font-weight: bold; width: 100px;">
+                                <option value="fast">Nhanh</option>
+                                <option value="normal" selected>Thường</option>
+                                <option value="slow">Chậm</option>
+                            </select>
+                        </div>
+
                         <div class="actions" style="display: flex; align-items: center; gap: 10px;">
                             
-                            <select id="algo-select" class="custom-select">
-                                <option value="bfs">Tìm kiếm theo chiều rộng (BFS)</option>
-                                <option value="dfs">Tìm kiếm theo chiều sâu (DFS)</option>
-                                <option value="dijkstra">Tìm đường đi ngắn nhất (Dijkstra) </option>
-                            </select>
+                            <button class="btn btn-primary" onclick="startAlgorithm()" style="background-color: green; margin: 0;">Chạy thuật toán</button>
+                            
+                            <div style="display: flex; flex-direction: column; border-radius: 6px; overflow: hidden; border: 1px solid #333;">
+                                <button class="btn" onclick="clearGraph()" style="background-color: #7f8c8f; color: white; border-radius: 0; margin: 0; padding: 5px 12px; font-size: 12px; border-bottom: 1px solid #333;">
+                                    Xóa toàn bộ đồ thị
+                                </button>
+                                <button class="btn" onclick="clearPaths()" style="background-color: brown; color: white; border-radius: 0; margin: 0; padding: 5px 12px; font-size: 12px;">
+                                    Xóa màu duyệt
+                                </button>
+                            </div>
 
-                            <button class="btn" onclick="generateRandomGraph()" style="background-color: #f39c12; color: white">
-                                Tạo đồ thị ngẫu nhiên
-                            </button>
-
-                            <button class="btn" onclick="clearGraph()" style="background-color: #7f8c8f; color: white">
-                                Xóa toàn bộ đồ thị
-                            </button>
-
-                            <button class="btn btn-primary" onclick="startAlgorithm()" style="background-color: green">Chạy thuật toán</button>
-                            <select id="speed-select" class="custom-select">
-                                <option value="fast">Tốc độ: Nhanh</option>
-                                <option value="normal" selected>Tốc độ: Thường</option>
-                                <option value="slow">Tốc độ: Chậm</option>
-                            </select>
-                            <button class="btn btn-secondary" onclick="clearPaths()" style="background-color: brown">Xóa màu duyệt</button>
                         </div>
                     </header>
                     
-                    <div class="grid-legend" style="display: flex; justify-content: center; gap: 25px; margin-bottom: 16px; flex-wrap: wrap; padding: 8px; background-color: #252526; border-radius: 8px; border: 1px solid #333;">
+                    <div class="grid-legend" style="display: flex; justify-content: center; gap: 25px; margin-bottom: 5px; flex-wrap: wrap; padding: 5px; background-color: #252526; border-radius: 8px; border: 1px solid #333;">
                         
                         <div class="legend-item" style="display: flex; align-items: center; gap: 8px;">
                             <div style="width: 20px; height: 20px; border: 2px solid #2ecc71; border-radius: 50%; background-color: rgba(46, 204, 113, 0.2); box-shadow: 0 0 5px rgba(46, 204, 113, 0.5);"></div>
@@ -98,14 +108,41 @@
 
                     </div>
 
-                    <div id="graph-container" class="graph-container">
-                        <svg id="edges-svg" class="edges-svg"></svg>
+                    <div class="graph-editor-layout" style="display: flex; gap: 15px;">
+                    
+                        <div class="edge-list-sidebar" style="flex: 2; display: flex; flex-direction: column;">
+                            <div style="background: #252526; padding: 12px; border: 1px solid #333; border-radius: 8px; flex: 1; display: flex; flex-direction: column;">
+                                <label style="color: #ccc; font-size: 13px; font-weight: bold; margin-bottom: 8px;"><i class="fa-solid fa-list-ol"></i> Danh sách cạnh</label>
+                                
+                                <textarea id="edge-list-input" placeholder="Ví dụ:&#10;1 2&#10;1 3&#10;2 4" style="flex: 1; background: #1e1e1e; color: #fff; border: 1px solid #444; padding: 10px; resize: none; font-family: 'Consolas', monospace; outline: none; border-radius: 4px; margin-bottom: 15px;"></textarea>
+                                
+                                <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                                    <div style="flex: 1;">
+                                        <label style="color: #2ecc71; font-size: 12px; font-weight: bold; display: block; margin-bottom: 6px;">Xuất phát:</label>
+                                        <input type="text" id="start-node-input" placeholder="VD: 1" style="width: 100%; background: #1e1e1e; color: #fff; border: 1px solid #444; padding: 8px; border-radius: 4px; outline: none; font-family: 'Consolas', monospace; text-align: center;">
+                                    </div>
+                                    <div style="flex: 1;">
+                                        <label style="color: #e74c3c; font-size: 12px; font-weight: bold; display: block; margin-bottom: 6px;">Đích đến:</label>
+                                        <input type="text" id="target-node-input" placeholder="VD: 4" style="width: 100%; background: #1e1e1e; color: #fff; border: 1px solid #444; padding: 8px; border-radius: 4px; outline: none; font-family: 'Consolas', monospace; text-align: center;">
+                                    </div>
+                                </div>
+
+                                <button class="btn" onclick="buildGraphFromEdgeList()" style="background-color: #007acc; color: white; width: 100%; font-weight: bold; padding: 10px 0;">
+                                    Dựng đồ thị
+                                </button>
+                            </div>
+                        </div>
+
+                        <div id="graph-container" class="graph-container" style="flex: 8; margin-top: 0;">
+                            <svg id="edges-svg" class="edges-svg"></svg>
+                        </div>
+
                     </div>
                 </div>
             </div>
 
             <div id="code_editor" class="tab-content">
-                <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
                     <h2><i class="fa-solid fa-laptop"></i> Code Editor</h2>
                     <div class="actions">
                         <select id="lang-select" class="custom-select" onchange="changeLanguage()">
@@ -151,7 +188,7 @@
             </div>
 
             <div id="test-gen" class="tab-content">
-                <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
                     <h2><i class="fa-solid fa-bug"></i> Test Generator</h2>
                     <div class="actions" style="display: flex; gap: 15px; align-items: center;">
                         <div style="display: flex; align-items: center; gap: 8px;">
@@ -165,7 +202,7 @@
                     </div>
                 </header>
 
-                <div class="stress-editors-container" style="display: flex; gap: 10px; height: 55vh; margin-bottom: 10px;">
+                <div class="stress-editors-container" style="display: flex; gap: 10px; height: 55vh; margin-bottom: 5px;">
                     
                     <div style="flex: 1; display: flex; flex-direction: column;">
                         <div style="background: #252526; padding: 8px 12px; border: 1px solid #444; border-bottom: none;">

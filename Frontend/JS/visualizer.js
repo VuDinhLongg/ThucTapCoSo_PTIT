@@ -1,41 +1,32 @@
 const container = document.getElementById('graph-container');
 let svg = document.getElementById('edges-svg');
 
-let nodes = {}; 
-let edges = [];
-let adjList = {};
-let nodeIdCounter = 0;
-
-let startNodeId = null;
-let targetNodeId = null;
-
+let nodes = {}, edges = [], adjList = {};
+let nodeIdCounter = 0, startNodeId = null, targetNodeId = null;
 let isAnimating = false;
-let selectedNodeId = null;
-let draggingNodeId = null;
 
-// Khởi tạo đồ thị mẫu lúc mới vào trang
-function initGraph() {
-    clearGraph();
-}
+// 1. Thêm lại biến theo dõi đỉnh đang bị kéo
+let draggingNodeId = null; 
 
-// Xóa trắng bảng vẽ
 function clearGraph() {
     if (isAnimating) return;
     container.innerHTML = '<svg id="edges-svg" class="edges-svg"></svg>';
     svg = document.getElementById('edges-svg');
     nodes = {}; edges = []; adjList = {}; 
-    nodeIdCounter = 0; startNodeId = null; targetNodeId = null; selectedNodeId = null;
+    nodeIdCounter = 0; startNodeId = null; targetNodeId = null;
+    draggingNodeId = null; // Reset khi xóa bảng
 }
 
-// Thêm đỉnh mới
-function addNode(x, y, type = 'normal') {
+window.onload = clearGraph;
+
+function addNode(x, y, type = 'normal', customLabel = null) {
     const id = nodeIdCounter++;
     const el = document.createElement('div');
     el.className = `vertex ${type}`;
     el.id = `vertex-${id}`;
     el.style.left = `${x}px`;
     el.style.top = `${y}px`;
-    el.textContent = id;
+    el.textContent = customLabel !== null ? customLabel : id; 
 
     if (type === 'start') startNodeId = id;
     if (type === 'target') targetNodeId = id;
@@ -44,55 +35,16 @@ function addNode(x, y, type = 'normal') {
     adjList[id] = [];
     container.appendChild(el);
 
-    // Xử lý sự kiện Chuột trái (Chọn để nối cạnh hoặc Kéo để di chuyển)
+    // 2. Lắng nghe sự kiện nhấn chuột vào Đỉnh để chuẩn bị kéo
     el.addEventListener('mousedown', (e) => {
-        if (isAnimating || e.button !== 0) return;
+        if (isAnimating || e.button !== 0) return; // Không cho kéo khi đang chạy thuật toán
         e.stopPropagation();
         draggingNodeId = id;
-
-        if (selectedNodeId === null) {
-            selectedNodeId = id;
-            el.style.boxShadow = '0 0 15px #FFD700'; // Phát sáng viền Vàng khi được chọn
-        } else if (selectedNodeId !== id) {
-            addEdge(selectedNodeId, id);
-            nodes[selectedNodeId].el.style.boxShadow = '';
-            selectedNodeId = null;
-            draggingNodeId = null; 
-        } else {
-            el.style.boxShadow = '';
-            selectedNodeId = null;
-        }
-    });
-
-    // Xử lý sự kiện Chuột phải (Đổi vai trò Xuất phát/Đích)
-    el.addEventListener('contextmenu', (e) => {
-        if (isAnimating) return;
-        e.preventDefault(); e.stopPropagation();
-        
-        let currType = nodes[id].type;
-        el.classList.remove(currType);
-        
-        if (currType === 'normal') {
-            if (startNodeId !== null) {
-                nodes[startNodeId].type = 'normal';
-                nodes[startNodeId].el.classList.remove('start');
-            }
-            nodes[id].type = 'start'; startNodeId = id; el.classList.add('start');
-        } else if (currType === 'start') {
-            if (targetNodeId !== null) {
-                nodes[targetNodeId].type = 'normal';
-                nodes[targetNodeId].el.classList.remove('target');
-            }
-            nodes[id].type = 'target'; targetNodeId = id; startNodeId = null; el.classList.add('target');
-        } else {
-            nodes[id].type = 'normal'; targetNodeId = null;
-        }
     });
 
     return id;
 }
 
-// Thêm Cạnh nối 2 đỉnh
 function addEdge(u, v) {
     if (adjList[u].includes(v)) return;
     adjList[u].push(v); adjList[v].push(u); 
@@ -106,7 +58,6 @@ function addEdge(u, v) {
     updateEdges();
 }
 
-// Cập nhật vị trí các cạnh khi Đỉnh bị kéo đi chỗ khác
 function updateEdges() {
     edges.forEach(edge => {
         edge.el.setAttribute('x1', nodes[edge.u].x);
@@ -116,41 +67,32 @@ function updateEdges() {
     });
 }
 
-// --- CÁC SỰ KIỆN TOÀN CỤC TRÊN KHUNG BẢNG ---
-
+// 3. Lắng nghe sự kiện di chuyển chuột trên toàn bộ Bảng vẽ
 container.addEventListener('mousemove', (e) => {
     if (isAnimating || draggingNodeId === null) return;
+    
+    // Tính toán tọa độ mới của chuột so với khung bảng
     const rect = container.getBoundingClientRect();
-    let x = e.clientX - rect.left; let y = e.clientY - rect.top;
-    nodes[draggingNodeId].x = x; nodes[draggingNodeId].y = y;
-    nodes[draggingNodeId].el.style.left = `${x}px`; nodes[draggingNodeId].el.style.top = `${y}px`;
+    let x = e.clientX - rect.left; 
+    let y = e.clientY - rect.top;
+    
+    // Cập nhật vị trí Đỉnh
+    nodes[draggingNodeId].x = x; 
+    nodes[draggingNodeId].y = y;
+    nodes[draggingNodeId].el.style.left = `${x}px`; 
+    nodes[draggingNodeId].el.style.top = `${y}px`;
+    
+    // Kéo giãn các Cạnh đi theo
     updateEdges();
 });
 
-container.addEventListener('mouseup', () => { draggingNodeId = null; });
-container.addEventListener('contextmenu', e => e.preventDefault());
-
-container.addEventListener('dblclick', (e) => {
-    if (isAnimating) return;
-    if (e.target === container || e.target === svg) {
-        const rect = container.getBoundingClientRect();
-        addNode(e.clientX - rect.left, e.clientY - rect.top);
-    }
+// 4. Lắng nghe sự kiện nhả chuột (ở bất kỳ đâu) để dừng kéo
+window.addEventListener('mouseup', () => { 
+    draggingNodeId = null; 
 });
 
-container.addEventListener('click', (e) => {
-    if (isAnimating) return;
-    if (e.target === container || e.target === svg) {
-        if (selectedNodeId !== null) {
-            nodes[selectedNodeId].el.style.boxShadow = '';
-            selectedNodeId = null;
-        }
-    }
-});
 
-window.onload = initGraph;
-
-// --- PHẦN LOGIC THUẬT TOÁN ĐỒ THỊ ---
+// --- CÁC HÀM THUẬT TOÁN ĐỒ THỊ ---
 
 function getSpeedDelay() {
     const speed = document.getElementById('speed-select').value;
@@ -178,12 +120,12 @@ function startAlgorithm() {
 }
 
 function runBFS() {
-    let visited = {}; let prev = {};
+    let visited = {}, prev = {};
     Object.keys(nodes).forEach(id => { visited[id] = false; prev[id] = null; });
     
     let queue = [startNodeId];
     visited[startNodeId] = true;
-    let visitedOrder = []; let targetFound = false;
+    let visitedOrder = [], targetFound = false;
 
     while (queue.length > 0) {
         let curr = queue.shift();
@@ -202,11 +144,11 @@ function runBFS() {
 }
 
 function runDFS() {
-    let visited = {}; let prev = {};
+    let visited = {}, prev = {};
     Object.keys(nodes).forEach(id => { visited[id] = false; prev[id] = null; });
     
     let stack = [startNodeId];
-    let visitedOrder = []; let targetFound = false;
+    let visitedOrder = [], targetFound = false;
 
     while (stack.length > 0) {
         let curr = stack.pop();
@@ -228,12 +170,12 @@ function runDFS() {
 }
 
 function runDijkstra() {
-    let visited = {}; let prev = {}; let dist = {};
+    let visited = {}, prev = {}, dist = {};
     Object.keys(nodes).forEach(id => { visited[id] = false; prev[id] = null; dist[id] = Infinity; });
     
     dist[startNodeId] = 0;
     let pq = [{ id: startNodeId, dist: 0 }];
-    let visitedOrder = []; let targetFound = false;
+    let visitedOrder = [], targetFound = false;
 
     while(pq.length > 0) {
         pq.sort((a, b) => a.dist - b.dist);
@@ -247,7 +189,6 @@ function runDijkstra() {
 
         adjList[curr].forEach(neighbor => {
             if (!visited[neighbor]) {
-                // Tính khoảng cách vật lý giữa 2 đỉnh
                 let d = Math.hypot(nodes[curr].x - nodes[neighbor].x, nodes[curr].y - nodes[neighbor].y);
                 let newDist = dist[curr] + d;
                 
@@ -262,7 +203,7 @@ function runDijkstra() {
 }
 
 function getShortestPath(prev, target) {
-    let path = []; let curr = target;
+    let path = [], curr = target;
     while(curr !== null) {
         path.unshift(curr);
         curr = prev[curr];
@@ -271,7 +212,8 @@ function getShortestPath(prev, target) {
 }
 
 function animateAlgorithm(visitedOrder, pathNodes, prev) {
-    isAnimating = true; const delay = getSpeedDelay();
+    isAnimating = true; 
+    const delay = getSpeedDelay();
 
     for (let i = 0; i <= visitedOrder.length; i++) {
         if (i === visitedOrder.length) {
@@ -285,7 +227,6 @@ function animateAlgorithm(visitedOrder, pathNodes, prev) {
                 nodes[curr].el.classList.add('visited');
             }
             
-            // Đổi màu cạnh đã đi qua
             if (prev[curr] !== null) {
                 let u = prev[curr], v = curr;
                 let edgeEl = document.getElementById(`edge-${u}-${v}`) || document.getElementById(`edge-${v}-${u}`);
@@ -305,7 +246,6 @@ function animateShortestPath(pathNodes) {
                 nodes[curr].el.classList.add('path');
             }
             
-            // Đổi màu cạnh thuộc đường đi ngắn nhất sang Vàng
             if (i > 0) {
                 let u = pathNodes[i-1], v = curr;
                 let edgeEl = document.getElementById(`edge-${u}-${v}`) || document.getElementById(`edge-${v}-${u}`);
@@ -320,49 +260,55 @@ function animateShortestPath(pathNodes) {
     }
 }
 
-// --- HÀM TẠO ĐỒ THỊ NGẪU NHIÊN ---
-function generateRandomGraph() {
+// --- HÀM TẠO ĐỒ THỊ BÂY GIỜ ---
+function buildGraphFromEdgeList() {
     if (isAnimating) return;
     
-    // 1. Dọn sạch bảng cũ
+    const text = document.getElementById('edge-list-input').value.trim();
+    // Lấy giá trị từ 2 ô nhập mới
+    const startInput = document.getElementById('start-node-input').value.trim();
+    const targetInput = document.getElementById('target-node-input').value.trim();
+    
+    if (!text) return;
+
+    const lines = text.split('\n');
+    let edgesToBuild = [];
+    let uniqueNodes = new Set(); 
+
+    lines.forEach(line => {
+        const parts = line.trim().split(/\s+/); 
+        if (parts.length >= 2) {
+            edgesToBuild.push([parts[0], parts[1]]);
+            uniqueNodes.add(parts[0]);
+            uniqueNodes.add(parts[1]);
+        }
+    });
+
+    // Ép thêm đỉnh xuất phát/đích vào tập hợp (nếu người dùng nhập đỉnh mồ côi không có cạnh)
+    if (startInput) uniqueNodes.add(startInput);
+    if (targetInput) uniqueNodes.add(targetInput);
+
+    if (uniqueNodes.size === 0) return;
     clearGraph();
 
-    let w = container.clientWidth || 800;
-    let h = container.clientHeight || 550;
-    const padding = 50; // Giữ khoảng cách an toàn viền để đỉnh không bị tràn ra ngoài
+    let w = container.clientWidth || 800, h = container.clientHeight || 550;
+    let cx = w / 2, cy = h / 2, r = Math.min(cx, cy) - 60; 
+    
+    const nodesArray = Array.from(uniqueNodes);
+    const angleStep = (2 * Math.PI) / nodesArray.length; 
+    let nodeMap = {}; 
 
-    // 2. Random số lượng đỉnh từ 6 đến 12
-    const numNodes = Math.floor(Math.random() * 7) + 6; 
-    let createdNodes = [];
-
-    // 3. Sinh tọa độ và tạo đỉnh
-    for (let i = 0; i < numNodes; i++) {
-        let x = Math.floor(Math.random() * (w - 2 * padding)) + padding;
-        let y = Math.floor(Math.random() * (h - 2 * padding)) + padding;
+    nodesArray.forEach((nodeName, index) => {
+        let x = cx + r * Math.cos(index * angleStep);
+        let y = cy + r * Math.sin(index * angleStep);
         
-        // Đỉnh đầu tiên là Xuất phát, đỉnh thứ hai là Đích, còn lại là Bình thường
+        // LUẬT TẠO ĐỈNH MỚI: Kiểm tra chính xác tên đỉnh với ô nhập
         let type = 'normal';
-        if (i === 0) type = 'start';
-        if (i === 1) type = 'target';
+        if (nodeName === startInput) type = 'start';
+        else if (nodeName === targetInput) type = 'target';
+        
+        nodeMap[nodeName] = addNode(x, y, type, nodeName);
+    });
 
-        let id = addNode(x, y, type);
-        createdNodes.push(id);
-    }
-
-    // 4. Nối các cạnh ngẫu nhiên (Đảm bảo đồ thị luôn liên thông, không có đỉnh mồ côi)
-    for (let i = 1; i < numNodes; i++) {
-        // Nối đỉnh hiện tại với 1 đỉnh ngẫu nhiên được sinh ra trước đó
-        let randomPrev = Math.floor(Math.random() * i);
-        addEdge(createdNodes[i], createdNodes[randomPrev]);
-    }
-
-    // 5. Ném thêm một vài cạnh ngẫu nhiên nữa cho đồ thị trông chằng chịt, phức tạp hơn
-    let extraEdges = Math.floor(numNodes * 1.5);
-    for (let i = 0; i < extraEdges; i++) {
-        let u = createdNodes[Math.floor(Math.random() * numNodes)];
-        let v = createdNodes[Math.floor(Math.random() * numNodes)];
-        if (u !== v) {
-            addEdge(u, v);
-        }
-    }
+    edgesToBuild.forEach(edge => addEdge(nodeMap[edge[0]], nodeMap[edge[1]]));
 }
