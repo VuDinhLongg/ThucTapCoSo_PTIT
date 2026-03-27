@@ -96,9 +96,9 @@ window.addEventListener('mouseup', () => {
 
 function getSpeedDelay() {
     const speed = document.getElementById('speed-select').value;
-    if (speed === 'fast') return 100;   
-    if (speed === 'slow') return 800;  
-    return 400;                         
+    if (speed === 'fast') return 500;
+    if (speed === 'slow') return 2000;
+    return 1000;
 }
 
 function clearPaths() {
