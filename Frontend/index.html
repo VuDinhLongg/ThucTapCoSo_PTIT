@@ -45,65 +45,59 @@
 
         <main class="content">
             <div id="visualizer" class="tab-content active">
-                <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                    <h2><i class="fa-brands fa-slack"></i> Algorithm Visualizer</h2>
-                    <div class="actions" style="display: flex; align-items: center; gap: 10px;">
-                        
-                        <select id="algo-select" class="custom-select">
-                            <option value="bfs">Tìm kiếm theo chiều rộng (BFS)</option>
-                            <option value="dfs">Tìm kiếm theo chiều sâu (DFS)</option>
-                            <option value="dijkstra">Tìm đường đi ngắn nhất (Dijkstra) </option>
-                        </select>
+                <div id="visualizer" class="tab-content active">
+                    <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h2><i class="fa-brands fa-slack"></i> Algorithm Visualizer</h2>
+                        <div class="actions" style="display: flex; align-items: center; gap: 10px;">
+                            
+                            <select id="algo-select" class="custom-select">
+                                <option value="bfs">Tìm kiếm theo chiều rộng (BFS)</option>
+                                <option value="dfs">Tìm kiếm theo chiều sâu (DFS)</option>
+                                <option value="dijkstra">Tìm đường đi ngắn nhất (Dijkstra) </option>
+                            </select>
 
-                        <button class="btn" onclick="generateRandomWalls()" style="background-color: #7f8c8f; color: white">
-                            Tạo vật cản ngẫu nhiên
-                        </button>
+                            <button class="btn" onclick="clearGraph()" style="background-color: #7f8c8f; color: white">
+                                Xóa toàn bộ đồ thị
+                            </button>
 
-                        <button class="btn btn-primary" onclick="startAlgorithm()" style="background-color: green">Chạy thuật toán</button>
-                        <select id="speed-select" class="custom-select">
-                            <option value="fast">Tốc độ: Nhanh</option>
-                            <option value="normal" selected>Tốc độ: Thường</option>
-                            <option value="slow">Tốc độ: Chậm</option>
-                        </select>
-                        <button class="btn btn-secondary" onclick="resetGrid()" style="background-color: brown">Xóa bảng</button>
-                    </div>
-                </header>
-                
-                <div class="grid-legend" style="display: flex; justify-content: center; gap: 25px; margin-bottom: 16px; flex-wrap: wrap; padding: 8px; background-color: #252526; border-radius: 8px; border: 1px solid #333;">
+                            <button class="btn btn-primary" onclick="startAlgorithm()" style="background-color: green">Chạy thuật toán</button>
+                            <select id="speed-select" class="custom-select">
+                                <option value="fast">Tốc độ: Nhanh</option>
+                                <option value="normal" selected>Tốc độ: Thường</option>
+                                <option value="slow">Tốc độ: Chậm</option>
+                            </select>
+                            <button class="btn btn-secondary" onclick="clearPaths()" style="background-color: brown">Xóa màu duyệt</button>
+                        </div>
+                    </header>
                     
-                    <div class="legend-item" style="display: flex; align-items: center; gap: 8px;">
-                        <div style="width: 20px; height: 20px; background-color: #2ecc71; border-radius: 4px; box-shadow: 0 0 5px rgba(46, 204, 113, 0.5);"></div>
-                        <span style="color: #ccc; font-size: 13px; font-weight: 600;">Điểm xuất phát</span>
+                    <div class="grid-legend" style="display: flex; justify-content: center; gap: 25px; margin-bottom: 16px; flex-wrap: wrap; padding: 8px; background-color: #252526; border-radius: 8px; border: 1px solid #333;">
+                        
+                        <div class="legend-item" style="display: flex; align-items: center; gap: 8px;">
+                            <div style="width: 20px; height: 20px; border: 2px solid #2ecc71; border-radius: 50%; background-color: rgba(46, 204, 113, 0.2); box-shadow: 0 0 5px rgba(46, 204, 113, 0.5);"></div>
+                            <span style="color: #ccc; font-size: 13px; font-weight: 600;">Điểm xuất phát</span>
+                        </div>
+
+                        <div class="legend-item" style="display: flex; align-items: center; gap: 8px;">
+                            <div style="width: 20px; height: 20px; border: 2px solid #e74c3c; border-radius: 50%; background-color: rgba(231, 76, 60, 0.2); box-shadow: 0 0 5px rgba(231, 76, 60, 0.5);"></div>
+                            <span style="color: #ccc; font-size: 13px; font-weight: 600;">Đích đến</span>
+                        </div>
+
+                        <div class="legend-item" style="display: flex; align-items: center; gap: 8px;">
+                            <div style="width: 20px; height: 20px; background-color: #3498db; border-radius: 50%; opacity: 0.8;"></div>
+                            <span style="color: #ccc; font-size: 13px; font-weight: 600;">Đang duyệt</span>
+                        </div>
+
+                        <div class="legend-item" style="display: flex; align-items: center; gap: 8px;">
+                            <div style="width: 20px; height: 20px; background-color: #f1c40f; border-radius: 50%; box-shadow: 0 0 8px rgba(241, 196, 15, 0.6);"></div>
+                            <span style="color: #ccc; font-size: 13px; font-weight: 600;">Đường đi tìm được</span>
+                        </div>
+
                     </div>
 
-                    <div class="legend-item" style="display: flex; align-items: center; gap: 8px;">
-                        <div style="width: 20px; height: 20px; background-color: #e74c3c; border-radius: 4px; box-shadow: 0 0 5px rgba(231, 76, 60, 0.5);"></div>
-                        <span style="color: #ccc; font-size: 13px; font-weight: 600;">Đích đến</span>
+                    <div id="graph-container" class="graph-container">
+                        <svg id="edges-svg" class="edges-svg"></svg>
                     </div>
-
-                    <div class="legend-item" style="display: flex; align-items: center; gap: 8px;">
-                        <div style="width: 20px; height: 20px; background-color: #7f8c8d; border-radius: 4px;"></div>
-                        <span style="color: #ccc; font-size: 13px; font-weight: 600;">Vật cản (Tường)</span>
-                    </div>
-
-                    <div class="legend-item" style="display: flex; align-items: center; gap: 8px;">
-                        <div style="width: 20px; height: 20px; background-color: #1e1e1e; border: 1px solid #444; border-radius: 4px;"></div>
-                        <span style="color: #ccc; font-size: 13px; font-weight: 600;">Ô trống</span>
-                    </div>
-
-                    <div class="legend-item" style="display: flex; align-items: center; gap: 8px;">
-                        <div style="width: 20px; height: 20px; background-color: #3498db; border-radius: 4px; opacity: 0.8;"></div>
-                        <span style="color: #ccc; font-size: 13px; font-weight: 600;">Đang duyệt</span>
-                    </div>
-
-                    <div class="legend-item" style="display: flex; align-items: center; gap: 8px;">
-                        <div style="width: 20px; height: 20px; background-color: #f1c40f; border-radius: 4px; box-shadow: 0 0 8px rgba(241, 196, 15, 0.6);"></div>
-                        <span style="color: #ccc; font-size: 13px; font-weight: 600;">Đường đi tìm được</span>
-                    </div>
-
                 </div>
-
-                <div class="visualizer-grid" id="gridContainer"></div>
             </div>
 
             <div id="code_editor" class="tab-content">

@@ -1,345 +1,337 @@
-const ROWS = 20;
-const COLS = 50;
+const container = document.getElementById('graph-container');
+let svg = document.getElementById('edges-svg');
 
-let startNodePos = { row: 10, col: 10 };
-let targetNodePos = { row: 10, col: 36 };
+let nodes = {}; 
+let edges = [];
+let adjList = {};
+let nodeIdCounter = 0;
+
+let startNodeId = null;
+let targetNodeId = null;
+
 let isAnimating = false;
+let selectedNodeId = null;
+let draggingNodeId = null;
 
-let isMousePressed = false;
-let isDraggingStart = false; 
-let isDraggingTarget = false;
+// Khởi tạo đồ thị mẫu lúc mới vào trang
+function initGraph() {
+    clearGraph();
+    let w = container.clientWidth || 800;
+    let h = container.clientHeight || 550;
 
-function createGrid() {
+    let n0 = addNode(w * 0.15, h * 0.5, 'start');
+    let n1 = addNode(w * 0.85, h * 0.5, 'target');
+    let n2 = addNode(w * 0.35, h * 0.25);
+    let n3 = addNode(w * 0.35, h * 0.75);
+    let n4 = addNode(w * 0.65, h * 0.25);
+    let n5 = addNode(w * 0.65, h * 0.75);
+    let n6 = addNode(w * 0.5, h * 0.5);
+
+    addEdge(n0, n2); addEdge(n0, n3);
+    addEdge(n2, n6); addEdge(n3, n6);
+    addEdge(n2, n4); addEdge(n3, n5);
+    addEdge(n6, n4); addEdge(n6, n5);
+    addEdge(n4, n1); addEdge(n5, n1);
+}
+
+// Xóa trắng bảng vẽ
+function clearGraph() {
     if (isAnimating) return;
-    const gridContainer = document.getElementById('gridContainer');
-    gridContainer.innerHTML = '';
+    container.innerHTML = '<svg id="edges-svg" class="edges-svg"></svg>';
+    svg = document.getElementById('edges-svg');
+    nodes = {}; edges = []; adjList = {}; 
+    nodeIdCounter = 0; startNodeId = null; targetNodeId = null; selectedNodeId = null;
+}
 
-    for (let row = 0; row < ROWS; row++) {
-        for (let col = 0; col < COLS; col++) {
-            const node = document.createElement('div');
-            node.className = 'node';
-            node.id = `node-${row}-${col}`; 
+// Thêm đỉnh mới
+function addNode(x, y, type = 'normal') {
+    const id = nodeIdCounter++;
+    const el = document.createElement('div');
+    el.className = `vertex ${type}`;
+    el.id = `vertex-${id}`;
+    el.style.left = `${x}px`;
+    el.style.top = `${y}px`;
+    el.textContent = id;
 
-            if (row === startNodePos.row && col === startNodePos.col) {
-                node.classList.add('start');
-            } else if (row === targetNodePos.row && col === targetNodePos.col) {
-                node.classList.add('target');
-            }
+    if (type === 'start') startNodeId = id;
+    if (type === 'target') targetNodeId = id;
 
-            gridContainer.appendChild(node);
+    nodes[id] = { id, x, y, type, el };
+    adjList[id] = [];
+    container.appendChild(el);
+
+    // Xử lý sự kiện Chuột trái (Chọn để nối cạnh hoặc Kéo để di chuyển)
+    el.addEventListener('mousedown', (e) => {
+        if (isAnimating || e.button !== 0) return;
+        e.stopPropagation();
+        draggingNodeId = id;
+
+        if (selectedNodeId === null) {
+            selectedNodeId = id;
+            el.style.boxShadow = '0 0 15px #FFD700'; // Phát sáng viền Vàng khi được chọn
+        } else if (selectedNodeId !== id) {
+            addEdge(selectedNodeId, id);
+            nodes[selectedNodeId].el.style.boxShadow = '';
+            selectedNodeId = null;
+            draggingNodeId = null; 
+        } else {
+            el.style.boxShadow = '';
+            selectedNodeId = null;
         }
-    }
+    });
 
-    gridContainer.addEventListener('mousedown', (e) => {
+    // Xử lý sự kiện Chuột phải (Đổi vai trò Xuất phát/Đích)
+    el.addEventListener('contextmenu', (e) => {
         if (isAnimating) return;
-        const node = e.target;
-        if (!node.classList.contains('node')) return;
-
-        if (node.classList.contains('start')) { isDraggingStart = true; return; }
-        if (node.classList.contains('target')) { isDraggingTarget = true; return; }
+        e.preventDefault(); e.stopPropagation();
         
-        isMousePressed = true;
-        toggleWall(node);
-    });
-
-    gridContainer.addEventListener('mousemove', (e) => {
-        if (isAnimating) return;
-        const node = e.target;
-        if (!node.classList.contains('node')) return;
-
-        const coords = node.id.split('-');
-        const r = parseInt(coords[1]);
-        const c = parseInt(coords[2]);
-
-        if (isDraggingStart) {
-            if (node.classList.contains('wall') || node.classList.contains('target')) return;
-            document.getElementById(`node-${startNodePos.row}-${startNodePos.col}`).classList.remove('start');
-            node.classList.add('start');
-            startNodePos = { row: r, col: c };
-            return;
-        }
-
-        if (isDraggingTarget) {
-            if (node.classList.contains('wall') || node.classList.contains('start')) return;
-            document.getElementById(`node-${targetNodePos.row}-${targetNodePos.col}`).classList.remove('target');
-            node.classList.add('target');
-            targetNodePos = { row: r, col: c };
-            return;
-        }
-
-        if (isMousePressed) {
-            if (!node.classList.contains('start') && !node.classList.contains('target')) {
-                node.classList.add('wall');
+        let currType = nodes[id].type;
+        el.classList.remove(currType);
+        
+        if (currType === 'normal') {
+            if (startNodeId !== null) {
+                nodes[startNodeId].type = 'normal';
+                nodes[startNodeId].el.classList.remove('start');
             }
+            nodes[id].type = 'start'; startNodeId = id; el.classList.add('start');
+        } else if (currType === 'start') {
+            if (targetNodeId !== null) {
+                nodes[targetNodeId].type = 'normal';
+                nodes[targetNodeId].el.classList.remove('target');
+            }
+            nodes[id].type = 'target'; targetNodeId = id; startNodeId = null; el.classList.add('target');
+        } else {
+            nodes[id].type = 'normal'; targetNodeId = null;
         }
+    });
+
+    return id;
+}
+
+// Thêm Cạnh nối 2 đỉnh
+function addEdge(u, v) {
+    if (adjList[u].includes(v)) return;
+    adjList[u].push(v); adjList[v].push(u); 
+
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.classList.add('edge-line');
+    line.id = `edge-${u}-${v}`;
+    svg.appendChild(line);
+
+    edges.push({ u, v, el: line });
+    updateEdges();
+}
+
+// Cập nhật vị trí các cạnh khi Đỉnh bị kéo đi chỗ khác
+function updateEdges() {
+    edges.forEach(edge => {
+        edge.el.setAttribute('x1', nodes[edge.u].x);
+        edge.el.setAttribute('y1', nodes[edge.u].y);
+        edge.el.setAttribute('x2', nodes[edge.v].x);
+        edge.el.setAttribute('y2', nodes[edge.v].y);
     });
 }
 
-function toggleWall(nodeElement) {
-    if (nodeElement.classList.contains('start') || nodeElement.classList.contains('target')) return;
-    nodeElement.classList.toggle('wall');
-}
+// --- CÁC SỰ KIỆN TOÀN CỤC TRÊN KHUNG BẢNG ---
 
-document.addEventListener('mouseup', function() {
-    isMousePressed = false;
-    isDraggingStart = false;
-    isDraggingTarget = false;
+container.addEventListener('mousemove', (e) => {
+    if (isAnimating || draggingNodeId === null) return;
+    const rect = container.getBoundingClientRect();
+    let x = e.clientX - rect.left; let y = e.clientY - rect.top;
+    nodes[draggingNodeId].x = x; nodes[draggingNodeId].y = y;
+    nodes[draggingNodeId].el.style.left = `${x}px`; nodes[draggingNodeId].el.style.top = `${y}px`;
+    updateEdges();
 });
 
-function resetGrid() {
-    createGrid(); 
+container.addEventListener('mouseup', () => { draggingNodeId = null; });
+container.addEventListener('contextmenu', e => e.preventDefault());
+
+container.addEventListener('dblclick', (e) => {
+    if (isAnimating) return;
+    if (e.target === container || e.target === svg) {
+        const rect = container.getBoundingClientRect();
+        addNode(e.clientX - rect.left, e.clientY - rect.top);
+    }
+});
+
+container.addEventListener('click', (e) => {
+    if (isAnimating) return;
+    if (e.target === container || e.target === svg) {
+        if (selectedNodeId !== null) {
+            nodes[selectedNodeId].el.style.boxShadow = '';
+            selectedNodeId = null;
+        }
+    }
+});
+
+window.onload = initGraph;
+
+// --- PHẦN LOGIC THUẬT TOÁN ĐỒ THỊ ---
+
+function getSpeedDelay() {
+    const speed = document.getElementById('speed-select').value;
+    if (speed === 'fast') return 100;   
+    if (speed === 'slow') return 800;  
+    return 400;                         
 }
 
-window.onload = function() {
-    createGrid();
-};
-
-function generateRandomWalls() {
-    resetGrid(); 
-
-    const nodes = document.querySelectorAll('.node');
-    
-    nodes.forEach(node => {
-        if (!node.classList.contains('start') && !node.classList.contains('target')) {
-            if (Math.random() < 0.3) {
-                node.classList.add('wall');
-            }
-        }
+function clearPaths() {
+    if (isAnimating) return;
+    Object.values(nodes).forEach(n => n.el.classList.remove('visited', 'path'));
+    edges.forEach(e => {
+        e.el.classList.remove('path');
+        e.el.style.stroke = '#7f8c8d';
     });
 }
 
 function startAlgorithm() {
-    if (isAnimating) return;
+    if (isAnimating || startNodeId === null || targetNodeId === null) return;
     const algo = document.getElementById('algo-select').value;
-    clearPreviousPaths();
-    if (algo === 'bfs') {
-        runBFS();
-    } else if (algo === 'dfs') {
-        runDFS();
-    } else if (algo === 'dijkstra') {
-        runDijkstra();
-    }
-}
-
-function clearPreviousPaths() {
-    const nodes = document.querySelectorAll('.node');
-    nodes.forEach(node => {
-        node.classList.remove('visited', 'path'); 
-    });
+    clearPaths();
+    if (algo === 'bfs') runBFS();
+    else if (algo === 'dfs') runDFS();
+    else if (algo === 'dijkstra') runDijkstra();
 }
 
 function runBFS() {
-    let visited = Array(ROWS).fill().map(() => Array(COLS).fill(false));
-    let prev = Array(ROWS).fill().map(() => Array(COLS).fill(null));
+    let visited = {}; let prev = {};
+    Object.keys(nodes).forEach(id => { visited[id] = false; prev[id] = null; });
     
-    let queue = [];
-    
-    const dr = [-1, 1, 0, 0];
-    const dc = [0, 0, -1, 1];
-
-    queue.push(startNodePos);
-    visited[startNodePos.row][startNodePos.col] = true;
-
-    let visitedNodesInOrder = []; 
-    let targetFound = false;
+    let queue = [startNodeId];
+    visited[startNodeId] = true;
+    let visitedOrder = []; let targetFound = false;
 
     while (queue.length > 0) {
-        let current = queue.shift(); 
-        visitedNodesInOrder.push(current);
+        let curr = queue.shift();
+        visitedOrder.push(curr);
 
-        if (current.row === targetNodePos.row && current.col === targetNodePos.col) {
-            targetFound = true;
-            break;
-        }
+        if (curr === targetNodeId) { targetFound = true; break; }
 
-        for (let i = 0; i < 4; i++) {
-            let newRow = current.row + dr[i];
-            let newCol = current.col + dc[i];
-
-            if (newRow >= 0 && newRow < ROWS && newCol >= 0 && newCol < COLS) {
-                if (!visited[newRow][newCol]) {
-                    let nodeElement = document.getElementById(`node-${newRow}-${newCol}`);
-                    
-                    if (!nodeElement.classList.contains('wall')) {
-                        visited[newRow][newCol] = true;
-                        prev[newRow][newCol] = current;
-                        
-                        queue.push({ row: newRow, col: newCol });
-                    }
-                }
+        adjList[curr].forEach(neighbor => {
+            if (!visited[neighbor]) {
+                visited[neighbor] = true; prev[neighbor] = curr;
+                queue.push(neighbor);
             }
-        }
+        });
     }
-    const shortestPathNodes = targetFound ? getShortestPath(prev) : [];
-    animateAlgorithm(visitedNodesInOrder, shortestPathNodes);
+    animateAlgorithm(visitedOrder, targetFound ? getShortestPath(prev, targetNodeId) : [], prev);
 }
 
 function runDFS() {
-    let visited = Array(ROWS).fill().map(() => Array(COLS).fill(false));
-    let prev = Array(ROWS).fill().map(() => Array(COLS).fill(null));
+    let visited = {}; let prev = {};
+    Object.keys(nodes).forEach(id => { visited[id] = false; prev[id] = null; });
     
-    let stack = [];
-    
-    const dr = [-1, 1, 0, 0];
-    const dc = [0, 0, -1, 1];
-
-    stack.push(startNodePos);
-
-    let visitedNodesInOrder = []; 
-    let targetFound = false;
+    let stack = [startNodeId];
+    let visitedOrder = []; let targetFound = false;
 
     while (stack.length > 0) {
-        let current = stack.pop(); 
+        let curr = stack.pop();
+        if (visited[curr]) continue;
 
-        if (visited[current.row][current.col]) continue;
+        visited[curr] = true;
+        visitedOrder.push(curr);
 
-        visited[current.row][current.col] = true;
-        visitedNodesInOrder.push(current);
+        if (curr === targetNodeId) { targetFound = true; break; }
 
-        if (current.row === targetNodePos.row && current.col === targetNodePos.col) {
-            targetFound = true;
-            break;
-        }
-
-        for (let i = 3; i >= 0; i--) {
-            let newRow = current.row + dr[i];
-            let newCol = current.col + dc[i];
-
-            if (newRow >= 0 && newRow < ROWS && newCol >= 0 && newCol < COLS) {
-                if (!visited[newRow][newCol]) {
-                    let nodeElement = document.getElementById(`node-${newRow}-${newCol}`);
-                    
-                    if (!nodeElement.classList.contains('wall')) {
-                        prev[newRow][newCol] = current;
-                        stack.push({ row: newRow, col: newCol });
-                    }
-                }
+        adjList[curr].forEach(neighbor => {
+            if (!visited[neighbor]) {
+                prev[neighbor] = curr;
+                stack.push(neighbor);
             }
-        }
+        });
     }
-    const shortestPathNodes = targetFound ? getShortestPath(prev) : [];
-    animateAlgorithm(visitedNodesInOrder, shortestPathNodes);
+    animateAlgorithm(visitedOrder, targetFound ? getShortestPath(prev, targetNodeId) : [], prev);
 }
 
 function runDijkstra() {
-    let visited = Array(ROWS).fill().map(() => Array(COLS).fill(false));
-    let prev = Array(ROWS).fill().map(() => Array(COLS).fill(null));
+    let visited = {}; let prev = {}; let dist = {};
+    Object.keys(nodes).forEach(id => { visited[id] = false; prev[id] = null; dist[id] = Infinity; });
     
-    let distances = Array(ROWS).fill().map(() => Array(COLS).fill(Infinity));
+    dist[startNodeId] = 0;
+    let pq = [{ id: startNodeId, dist: 0 }];
+    let visitedOrder = []; let targetFound = false;
 
-    let pq = [];
-
-    const dr = [-1, 1, 0, 0];
-    const dc = [0, 0, -1, 1];
-
-    distances[startNodePos.row][startNodePos.col] = 0;
-    pq.push({ row: startNodePos.row, col: startNodePos.col, dist: 0 });
-
-    let visitedNodesInOrder = [];
-    let targetFound = false;
-
-    while (pq.length > 0) {
+    while(pq.length > 0) {
         pq.sort((a, b) => a.dist - b.dist);
-        let current = pq.shift(); 
+        let curr = pq.shift().id;
 
-        if (visited[current.row][current.col]) continue;
+        if (visited[curr]) continue;
+        visited[curr] = true;
+        visitedOrder.push(curr);
 
-        visited[current.row][current.col] = true;
-        visitedNodesInOrder.push(current);
+        if (curr === targetNodeId) { targetFound = true; break; }
 
-        if (current.row === targetNodePos.row && current.col === targetNodePos.col) {
-            targetFound = true;
-            break;
-        }
-
-        for (let i = 0; i < 4; i++) {
-            let newRow = current.row + dr[i];
-            let newCol = current.col + dc[i];
-
-            if (newRow >= 0 && newRow < ROWS && newCol >= 0 && newCol < COLS) {
-                if (!visited[newRow][newCol]) {
-                    let nodeElement = document.getElementById(`node-${newRow}-${newCol}`);
-                    
-                    if (!nodeElement.classList.contains('wall')) {
-                        let newDist = distances[current.row][current.col] + 1;
-
-                        if (newDist < distances[newRow][newCol]) {
-                            distances[newRow][newCol] = newDist;
-                            prev[newRow][newCol] = current;
-                            
-                            pq.push({ row: newRow, col: newCol, dist: newDist });
-                        }
-                    }
+        adjList[curr].forEach(neighbor => {
+            if (!visited[neighbor]) {
+                // Tính khoảng cách vật lý giữa 2 đỉnh
+                let d = Math.hypot(nodes[curr].x - nodes[neighbor].x, nodes[curr].y - nodes[neighbor].y);
+                let newDist = dist[curr] + d;
+                
+                if (newDist < dist[neighbor]) {
+                    dist[neighbor] = newDist; prev[neighbor] = curr;
+                    pq.push({ id: neighbor, dist: newDist });
                 }
             }
-        }
+        });
     }
-    const shortestPathNodes = targetFound ? getShortestPath(prev) : [];
-    animateAlgorithm(visitedNodesInOrder, shortestPathNodes);
+    animateAlgorithm(visitedOrder, targetFound ? getShortestPath(prev, targetNodeId) : [], prev);
 }
 
-function getSpeedDelay() {
-    const speed = document.getElementById('speed-select').value;
-    if (speed === 'fast') return 10;   
-    if (speed === 'slow') return 100;  
-    return 30;                         
-}
-
-function getShortestPath(prev) {
-    let path = [];
-    let current = { row: targetNodePos.row, col: targetNodePos.col };
-    
-    if (prev[current.row][current.col] === null) return [];
-
-    while (current !== null && current !== undefined) {
-        path.unshift(current); 
-        if (current.row === startNodePos.row && current.col === startNodePos.col) break;
-        current = prev[current.row][current.col];
+function getShortestPath(prev, target) {
+    let path = []; let curr = target;
+    while(curr !== null) {
+        path.unshift(curr);
+        curr = prev[curr];
     }
     return path;
 }
 
-function animateAlgorithm(visitedNodesInOrder, shortestPathNodes) {
-    isAnimating = true; 
-    const delay = getSpeedDelay();
+function animateAlgorithm(visitedOrder, pathNodes, prev) {
+    isAnimating = true; const delay = getSpeedDelay();
 
-    for (let i = 0; i <= visitedNodesInOrder.length; i++) {
-        if (i === visitedNodesInOrder.length) {
-            setTimeout(() => {
-                animateShortestPath(shortestPathNodes);
-            }, delay * i);
+    for (let i = 0; i <= visitedOrder.length; i++) {
+        if (i === visitedOrder.length) {
+            setTimeout(() => { animateShortestPath(pathNodes); }, delay * i);
             return;
         }
-        
+
         setTimeout(() => {
-            const node = visitedNodesInOrder[i];
-            if (!(node.row === startNodePos.row && node.col === startNodePos.col) && 
-                !(node.row === targetNodePos.row && node.col === targetNodePos.col)) {
-                
-                document.getElementById(`node-${node.row}-${node.col}`).classList.add('visited');
+            const curr = visitedOrder[i];
+            if (curr !== startNodeId && curr !== targetNodeId) {
+                nodes[curr].el.classList.add('visited');
+            }
+            
+            // Đổi màu cạnh đã đi qua
+            if (prev[curr] !== null) {
+                let u = prev[curr], v = curr;
+                let edgeEl = document.getElementById(`edge-${u}-${v}`) || document.getElementById(`edge-${v}-${u}`);
+                if (edgeEl) edgeEl.style.stroke = '#3498db';
             }
         }, delay * i);
     }
 }
 
-function animateShortestPath(shortestPathNodes) {
-    if (shortestPathNodes.length === 0) {
-        isAnimating = false; 
-        return;
-    }
+function animateShortestPath(pathNodes) {
+    if (pathNodes.length === 0) { isAnimating = false; return; }
 
-    for (let i = 0; i < shortestPathNodes.length; i++) {
+    for (let i = 0; i < pathNodes.length; i++) {
         setTimeout(() => {
-            const node = shortestPathNodes[i];
-            if (!(node.row === startNodePos.row && node.col === startNodePos.col) && 
-                !(node.row === targetNodePos.row && node.col === targetNodePos.col)) {
-                
-                document.getElementById(`node-${node.row}-${node.col}`).classList.add('path');
+            let curr = pathNodes[i];
+            if (curr !== startNodeId && curr !== targetNodeId) {
+                nodes[curr].el.classList.add('path');
+            }
+            
+            // Đổi màu cạnh thuộc đường đi ngắn nhất sang Vàng
+            if (i > 0) {
+                let u = pathNodes[i-1], v = curr;
+                let edgeEl = document.getElementById(`edge-${u}-${v}`) || document.getElementById(`edge-${v}-${u}`);
+                if (edgeEl) {
+                    edgeEl.classList.add('path');
+                    edgeEl.style.stroke = ''; 
+                }
             }
 
-            if (i === shortestPathNodes.length - 1) {
-                isAnimating = false;
-            }
-        }, 40 * i); 
+            if (i === pathNodes.length - 1) isAnimating = false;
+        }, 100 * i); 
     }
 }
