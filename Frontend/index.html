@@ -187,50 +187,72 @@
             </div>
 
             <div id="test-gen" class="tab-content">
-                <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
-                    <h2><i class="fa-solid fa-bug"></i> Test Generator</h2>
-                    <div class="actions" style="display: flex; gap: 15px; align-items: center;">
-                        <div style="display: flex; align-items: center; gap: 8px;">
-                            <label style="color: #ddd; font-size: 14px; font-weight: bold;">Số lượng Test:</label>
-                            <input type="number" id="test-count" value="100" min="1" max="10000" style="background: #1e1e1e; color: #fff; border: 1px solid #444; padding: 8px 10px; width: 80px; border-radius: 4px; outline: none; font-family: 'Consolas', monospace;">
-                        </div>
-                        
-                        <button id="btnRun" class="btn btn-primary" onclick="runCode()" style="background-color: green; color: white; padding: 8px 25px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer;">
-                            <i class="fa-solid fa-play"></i> Run
-                        </button>
-                    </div>
-                </header>
-
-                <div class="stress-editors-container" style="display: flex; gap: 10px; height: 55vh; margin-bottom: 5px;">
+                <div style="display: flex; flex-direction: column; height: calc(100vh - 40px);">
                     
-                    <div style="flex: 1; display: flex; flex-direction: column;">
-                        <div style="background: #252526; padding: 8px 12px; border: 1px solid #444; border-bottom: none;">
-                            <span style="color: #e2a0ff; font-size: 13px; font-weight: bold;"> Generator (trình sinh test)</span>
+                    <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h2><i class="fa-solid fa-bug"></i> Test Generator</h2>
+                        <div class="actions" style="display: flex; gap: 15px; align-items: center;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <label style="color: #ddd; font-size: 14px; font-weight: bold;">Số lượng Test:</label>
+                                <input type="number" id="test-count" value="100" min="1" max="10000" style="background: #1e1e1e; color: #fff; border: 1px solid #444; padding: 8px 10px; width: 80px; border-radius: 4px; outline: none; font-family: 'Consolas', monospace;">
+                            </div>
+                            
+                            <button id="btnRun" class="btn btn-primary" onclick="runCode()" style="background-color: green; color: white; padding: 8px 25px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer;">
+                                <i class="fa-solid fa-play"></i> Run
+                            </button>
                         </div>
-                        <div id="editor-gen" style="flex: 1; border: 1px solid #444; background: #1e1e1e; color: #888; padding: 10px;"></div>
-                    </div>
+                    </header>
 
-                    <div style="flex: 1; display: flex; flex-direction: column;">
-                        <div style="background: #252526; padding: 8px 12px; border: 1px solid #444; border-bottom: none;">
-                            <span style="color: #2ecc71; font-size: 13px; font-weight: bold;"> Brute-force (thuật duyệt trâu)</span>
+                    <div style="flex: 1; display: flex; flex-direction: column; border: 1px solid #444; border-radius: 8px; overflow: hidden; background: #1e1e1e;">
+                        
+                        <div class="stress-editors-container" style="display: flex; flex: 7;">
+                            
+                            <div style="flex: 1; display: flex; flex-direction: column; border-right: 1px solid #444;">
+                                <div style="background: #252526; padding: 6px 12px; border-bottom: 1px solid #444; display: flex; justify-content: space-between; align-items: center;">
+                                    <span style="color: #e2a0ff; font-size: 13px; font-weight: bold;"> Generator</span>
+                                    <select id="lang-gen" class="custom-select" style="padding: 2px 6px; font-size: 11px; width: auto;" onchange="changeTestLang('gen')">
+                                        <option value="python" selected>Python</option>
+                                        <option value="cpp">C++</option>
+                                        <option value="java">Java</option>
+                                    </select>
+                                </div>
+                                <div id="editor-gen" style="flex: 1; padding: 10px;"></div>
+                            </div>
+
+                            <div style="flex: 1; display: flex; flex-direction: column; border-right: 1px solid #444;">
+                                <div style="background: #252526; padding: 6px 12px; border-bottom: 1px solid #444; display: flex; justify-content: space-between; align-items: center;">
+                                    <span style="color: #2ecc71; font-size: 13px; font-weight: bold;"> Brute-force</span>
+                                    <select id="lang-brute" class="custom-select" style="padding: 2px 6px; font-size: 11px; width: auto;" onchange="changeTestLang('brute')">
+                                        <option value="cpp" selected>C++</option>
+                                        <option value="python">Python</option>
+                                        <option value="java">Java</option>
+                                    </select>
+                                </div>
+                                <div id="editor-brute" style="flex: 1; padding: 10px;"></div>
+                            </div>
+
+                            <div style="flex: 1; display: flex; flex-direction: column;">
+                                <div style="background: #252526; padding: 6px 12px; border-bottom: 1px solid #444; display: flex; justify-content: space-between; align-items: center;">
+                                    <span style="color: yellow; font-size: 13px; font-weight: bold;"> Optimized</span>
+                                    <select id="lang-opt" class="custom-select" style="padding: 2px 6px; font-size: 11px; width: auto;" onchange="changeTestLang('opt')">
+                                        <option value="cpp" selected>C++</option>
+                                        <option value="python">Python</option>
+                                        <option value="java">Java</option>
+                                    </select>
+                                </div>
+                                <div id="editor-opt" style="flex: 1; padding: 10px;"></div>
+                            </div>
+
                         </div>
-                        <div id="editor-brute" style="flex: 1; border: 1px solid #444; background: #1e1e1e; color: #888; padding: 10px;"></div>
-                    </div>
 
-                    <div style="flex: 1; display: flex; flex-direction: column;">
-                        <div style="background: #252526; padding: 8px 12px; border: 1px solid #444; border-bottom: none;">
-                            <span style="color: yellow; font-size: 13px; font-weight: bold;"> Optimized (thuật tối ưu)</span>
+                        <div class="stress-output-container" style="flex: 3; display: flex; flex-direction: column; border-top: 1px solid #444;">
+                            <div style="background: #252526; padding: 8px 12px; border-bottom: 1px solid #444; display: flex; justify-content: space-between;">
+                                <span style="color: cyan; font-size: 13px; font-weight: bold;"> Console</span>
+                            </div>
+                            <pre id="stress-console" style="flex: 1; color: #ccc; padding: 15px; overflow-y: auto; font-family: 'Consolas', monospace; margin: 0; outline: none;">Nhấn nút Run để hiển thị kết quả...</pre>
                         </div>
-                        <div id="editor-opt" style="flex: 1; border: 1px solid #444; background: #1e1e1e; color: #888; padding: 10px;"></div>
-                    </div>
 
-                </div>
-
-                <div class="stress-output-container" style="height: 25vh; display: flex; flex-direction: column;">
-                    <div style="background: #252526; padding: 8px 12px; border: 1px solid #444; border-bottom: none; display: flex; justify-content: space-between;">
-                        <span style="color: cyan; font-size: 13px; font-weight: bold;"> Console</span>
                     </div>
-                    <pre id="stress-console" style="flex: 1; background: #1e1e1e; color: #ccc; border: 1px solid #444; padding: 15px; overflow-y: auto; font-family: 'Consolas', monospace; margin: 0; outline: none;">Nhấn nút Run để hiển thị kết quả...</pre>
                 </div>
             </div>
 

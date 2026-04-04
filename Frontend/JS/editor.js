@@ -75,3 +75,81 @@ function changeLanguage() {
         }
     }
 }
+
+// Hàm thay đổi ngôn ngữ cho từng khung Editor trong Test Generator
+function changeTestLang(editorType) {
+    // Đảm bảo thư viện monaco đã được tải xong
+    if (typeof monaco !== 'undefined') {
+        if (editorType === 'gen' && typeof genEditor !== 'undefined') {
+            const lang = document.getElementById('lang-gen').value;
+            monaco.editor.setModelLanguage(genEditor.getModel(), lang);
+        } 
+        else if (editorType === 'brute' && typeof bruteEditor !== 'undefined') {
+            const lang = document.getElementById('lang-brute').value;
+            monaco.editor.setModelLanguage(bruteEditor.getModel(), lang);
+        } 
+        else if (editorType === 'opt' && typeof optEditor !== 'undefined') {
+            const lang = document.getElementById('lang-opt').value;
+            monaco.editor.setModelLanguage(optEditor.getModel(), lang);
+        }
+    }
+}
+
+// --- HÀM GỌI BACKEND NHÀ LÀM (CHUẨN ONECOMPILER) ---
+async function runCode() {
+    const langCode = document.getElementById('lang-select').value;
+    const input = document.getElementById('user-input').value;
+    const outputConsole = document.getElementById('output-console');
+    const btnRun = document.getElementById('btnRun');
+
+    const code = typeof mainEditor !== 'undefined' ? mainEditor.getValue() : '';
+
+    if (!code.trim()) {
+        outputConsole.textContent = "Vui lòng nhập code trước khi chạy!";
+        outputConsole.style.color = "#e74c3c";
+        return;
+    }
+
+    // Đưa định dạng ngôn ngữ về cho Backend hiểu
+    let backendLang = "";
+    if (langCode === 'cpp') backendLang = "c++";
+    else if (langCode === 'python') backendLang = "python";
+    else if (langCode === 'java') backendLang = "java";
+
+    btnRun.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Running...';
+    btnRun.disabled = true;
+    outputConsole.textContent = "Đang biên dịch và chạy code...";
+    outputConsole.style.color = "#cccccc";
+
+    try {
+        // Gửi thẳng sang API Backend nội bộ ở cổng 5000
+        const response = await fetch('http://127.0.0.1:5000/run', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                language: backendLang,
+                code: code,
+                input: input
+            })
+        });
+
+        const result = await response.json();
+
+        if (result.code !== 0) {
+            // Lỗi Compile hoặc Runtime (Chữ đỏ)
+            outputConsole.textContent = result.stderr || "Lỗi không xác định";
+            outputConsole.style.color = "#e74c3c"; 
+        } else {
+            // Output thật sự (Chữ xanh lá)
+            outputConsole.textContent = result.stdout || "Chương trình chạy xong (Không in ra gì cả)";
+            outputConsole.style.color = "#2ecc71"; 
+        }
+
+    } catch (error) {
+        outputConsole.textContent = "Không gọi được Backend!\nNhớ mở terminal gõ 'python app.py' để bật server nhé.";
+        outputConsole.style.color = "#e74c3c"; 
+    } finally {
+        btnRun.innerHTML = '<i class="fa-solid fa-play"></i> Run';
+        btnRun.disabled = false;
+    }
+}

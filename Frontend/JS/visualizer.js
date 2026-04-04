@@ -3,7 +3,7 @@ let svg = document.getElementById('edges-svg');
 
 let nodes = {}, edges = [], adjList = {};
 let nodeIdCounter = 0, startNodeId = null, targetNodeId = null;
-let isAnimating = false, draggingNodeId = null; // Đã dọn dẹp các biến thừa
+let isAnimating = false, draggingNodeId = null;
 
 function clearGraph() {
     if (isAnimating) return;
@@ -32,7 +32,6 @@ function addNode(x, y, type = 'normal', customLabel = null) {
     adjList[id] = [];
     container.appendChild(el);
 
-    // Chỉ giữ lại DUY NHẤT sự kiện mousedown để KÉO THẢ (Không double click, không chuột phải)
     el.addEventListener('mousedown', (e) => {
         if (isAnimating || e.button !== 0) return; 
         e.stopPropagation();
@@ -42,29 +41,82 @@ function addNode(x, y, type = 'normal', customLabel = null) {
     return id;
 }
 
-function addEdge(u, v) {
-    if (adjList[u].includes(v)) return;
-    adjList[u].push(v); adjList[v].push(u); 
+// 1. Nâng cấp hàm addEdge để nhận thêm biến w (trọng số)
+function addEdge(u, v, w = 1) {
+    // Cập nhật cách kiểm tra trùng cạnh
+    if (adjList[u].some(edge => edge.v === v)) return;
+    
+    // Lưu thẳng trọng số vào Danh sách kề
+    adjList[u].push({ v: v, w: w }); 
+    adjList[v].push({ v: u, w: w }); 
 
     const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
     line.classList.add('edge-line');
     line.id = `edge-${u}-${v}`;
     svg.appendChild(line);
 
-    edges.push({ u, v, el: line });
+    // Tạo thẻ Text (Chữ) của SVG để hiển thị con số lên màn hình
+    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    text.textContent = w;
+    text.setAttribute('fill', '#ffd700'); // Trọng số hiển thị màu vàng cho nổi bật
+    text.setAttribute('font-size', '14px');
+    text.setAttribute('font-weight', 'bold');
+    text.setAttribute('text-anchor', 'middle');
+    text.style.userSelect = 'none'; // Không cho bôi đen text
+    text.style.pointerEvents = 'none'; // Chuột xuyên qua text để không bị lỗi kéo thả
+    svg.appendChild(text);
+
+    // Lưu cả line và text vào mảng
+    edges.push({ u, v, el: line, textEl: text });
     updateEdges();
 }
 
 function updateEdges() {
     edges.forEach(edge => {
-        edge.el.setAttribute('x1', nodes[edge.u].x);
-        edge.el.setAttribute('y1', nodes[edge.u].y);
-        edge.el.setAttribute('x2', nodes[edge.v].x);
-        edge.el.setAttribute('y2', nodes[edge.v].y);
+        let uNode = nodes[edge.u];
+        let vNode = nodes[edge.v];
+        
+        // Cập nhật vị trí đường thẳng
+        edge.el.setAttribute('x1', uNode.x);
+        edge.el.setAttribute('y1', uNode.y);
+        edge.el.setAttribute('x2', vNode.x);
+        edge.el.setAttribute('y2', vNode.y);
+        
+        // Tính toán điểm chính giữa (Midpoint)
+        let midX = (uNode.x + vNode.x) / 2;
+        let midY = (uNode.y + vNode.y) / 2;
+        
+        // --- CHỈNH SỬA TỌA ĐỘ TEXT TRỌNG SỐ ---
+        
+        // Tính vectơ hiệu
+        let dx = vNode.x - uNode.x;
+        let dy = vNode.y - uNode.y;
+        
+        // Tính độ dài cạnh
+        let length = Math.hypot(dx, dy);
+        
+        // Xử lý trường hợp 2 đỉnh trùng nhau (độ dài bằng 0)
+        if (length > 0) {
+            // Xác định khoảng cách văn bản "dạt" ra khỏi cạnh (tính theo pixel)
+            // Bạn có thể tăng giảm số 18 này để thay đổi khoảng cách
+            let offsetDistance = 8; 
+            
+            // Tính toán vectơ pháp tuyến (Normal vector) vuông góc với cạnh.
+            // Công thức: Normal = (-dy, dx). Chúng ta chuẩn hóa (Unit vector).
+            // Vị trí text = Midpoint + (OffsetDistance * UnitNormal)
+            let textX = midX + offsetDistance * (-dy / length);
+            let textY = midY + offsetDistance * (dx / length);
+            
+            edge.textEl.setAttribute('x', textX);
+            edge.textEl.setAttribute('y', textY + 5); // Cộng thêm 5 để căn giữa theo chiều dọc
+        } else {
+            // Nếu độ dài bằng 0, đặt text tại chính giữa đỉnh
+            edge.textEl.setAttribute('x', midX);
+            edge.textEl.setAttribute('y', midY + 5);
+        }
     });
 }
 
-// Lắng nghe di chuyển chuột để kéo đỉnh
 container.addEventListener('mousemove', (e) => {
     if (isAnimating || draggingNodeId === null) return;
     const rect = container.getBoundingClientRect();
@@ -81,12 +133,11 @@ container.addEventListener('mousemove', (e) => {
 
 window.addEventListener('mouseup', () => { draggingNodeId = null; });
 
-// --- TỐC ĐỘ MỚI ---
 function getSpeedDelay() {
     const speed = document.getElementById('speed-select').value;
-    if (speed === 'fast') return 400;   // Nhanh = 400ms
-    if (speed === 'slow') return 1200;  // Chậm = 1200ms
-    return 800;                         // Thường = 800ms
+    if (speed === 'fast') return 400;   
+    if (speed === 'slow') return 1200;  
+    return 800;                         
 }
 
 function clearPaths() {
@@ -107,6 +158,7 @@ function startAlgorithm() {
     else if (algo === 'dijkstra') runDijkstra();
 }
 
+// 3. Cập nhật cách đọc dữ liệu cho BFS và DFS
 function runBFS() {
     let visited = {}, prev = {};
     Object.keys(nodes).forEach(id => { visited[id] = false; prev[id] = null; });
@@ -121,7 +173,8 @@ function runBFS() {
 
         if (curr === targetNodeId) { targetFound = true; break; }
 
-        adjList[curr].forEach(neighbor => {
+        adjList[curr].forEach(edge => {
+            let neighbor = edge.v; // Trích xuất đỉnh kề
             if (!visited[neighbor]) {
                 visited[neighbor] = true; prev[neighbor] = curr;
                 queue.push(neighbor);
@@ -147,7 +200,8 @@ function runDFS() {
 
         if (curr === targetNodeId) { targetFound = true; break; }
 
-        adjList[curr].forEach(neighbor => {
+        adjList[curr].forEach(edge => {
+            let neighbor = edge.v;
             if (!visited[neighbor]) {
                 prev[neighbor] = curr;
                 stack.push(neighbor);
@@ -157,6 +211,7 @@ function runDFS() {
     animateAlgorithm(visitedOrder, targetFound ? getShortestPath(prev, targetNodeId) : [], prev);
 }
 
+// 4. Cập nhật "Não bộ" Dijkstra để đọc trọng số thủ công
 function runDijkstra() {
     let visited = {}, prev = {}, dist = {};
     Object.keys(nodes).forEach(id => { visited[id] = false; prev[id] = null; dist[id] = Infinity; });
@@ -175,11 +230,12 @@ function runDijkstra() {
 
         if (curr === targetNodeId) { targetFound = true; break; }
 
-        adjList[curr].forEach(neighbor => {
+        adjList[curr].forEach(edge => {
+            let neighbor = edge.v;
+            let weight = edge.w; // Trích xuất trọng số w
+            
             if (!visited[neighbor]) {
-                let d = Math.hypot(nodes[curr].x - nodes[neighbor].x, nodes[curr].y - nodes[neighbor].y);
-                let newDist = dist[curr] + d;
-                
+                let newDist = dist[curr] + weight;
                 if (newDist < dist[neighbor]) {
                     dist[neighbor] = newDist; prev[neighbor] = curr;
                     pq.push({ id: neighbor, dist: newDist });
@@ -248,7 +304,6 @@ function animateShortestPath(pathNodes) {
     }
 }
 
-// --- DỰNG ĐỒ THỊ TỪ EDGE LIST & Ô INPUT ---
 function buildGraphFromEdgeList() {
     if (isAnimating) return;
     
@@ -265,9 +320,14 @@ function buildGraphFromEdgeList() {
     lines.forEach(line => {
         const parts = line.trim().split(/\s+/); 
         if (parts.length >= 2) {
-            edgesToBuild.push([parts[0], parts[1]]);
-            uniqueNodes.add(parts[0]);
-            uniqueNodes.add(parts[1]);
+            let u = parts[0];
+            let v = parts[1];
+            // 5. Đọc tham số thứ 3 (trọng số), nếu không có thì mặc định là 1
+            let w = parts.length >= 3 ? parseFloat(parts[2]) : 1; 
+            
+            edgesToBuild.push([u, v, w]);
+            uniqueNodes.add(u);
+            uniqueNodes.add(v);
         }
     });
 
@@ -295,5 +355,6 @@ function buildGraphFromEdgeList() {
         nodeMap[nodeName] = addNode(x, y, type, nodeName);
     });
 
-    edgesToBuild.forEach(edge => addEdge(nodeMap[edge[0]], nodeMap[edge[1]]));
+    // Truyền w vào hàm addEdge
+    edgesToBuild.forEach(edge => addEdge(nodeMap[edge[0]], nodeMap[edge[1]], edge[2]));
 }
