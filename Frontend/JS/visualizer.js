@@ -3,10 +3,7 @@ let svg = document.getElementById('edges-svg');
 
 let nodes = {}, edges = [], adjList = {};
 let nodeIdCounter = 0, startNodeId = null, targetNodeId = null;
-let isAnimating = false;
-
-// 1. Thêm lại biến theo dõi đỉnh đang bị kéo
-let draggingNodeId = null; 
+let isAnimating = false, draggingNodeId = null; // Đã dọn dẹp các biến thừa
 
 function clearGraph() {
     if (isAnimating) return;
@@ -14,7 +11,7 @@ function clearGraph() {
     svg = document.getElementById('edges-svg');
     nodes = {}; edges = []; adjList = {}; 
     nodeIdCounter = 0; startNodeId = null; targetNodeId = null;
-    draggingNodeId = null; // Reset khi xóa bảng
+    draggingNodeId = null;
 }
 
 window.onload = clearGraph;
@@ -35,9 +32,9 @@ function addNode(x, y, type = 'normal', customLabel = null) {
     adjList[id] = [];
     container.appendChild(el);
 
-    // 2. Lắng nghe sự kiện nhấn chuột vào Đỉnh để chuẩn bị kéo
+    // Chỉ giữ lại DUY NHẤT sự kiện mousedown để KÉO THẢ (Không double click, không chuột phải)
     el.addEventListener('mousedown', (e) => {
-        if (isAnimating || e.button !== 0) return; // Không cho kéo khi đang chạy thuật toán
+        if (isAnimating || e.button !== 0) return; 
         e.stopPropagation();
         draggingNodeId = id;
     });
@@ -67,38 +64,29 @@ function updateEdges() {
     });
 }
 
-// 3. Lắng nghe sự kiện di chuyển chuột trên toàn bộ Bảng vẽ
+// Lắng nghe di chuyển chuột để kéo đỉnh
 container.addEventListener('mousemove', (e) => {
     if (isAnimating || draggingNodeId === null) return;
-    
-    // Tính toán tọa độ mới của chuột so với khung bảng
     const rect = container.getBoundingClientRect();
     let x = e.clientX - rect.left; 
     let y = e.clientY - rect.top;
     
-    // Cập nhật vị trí Đỉnh
     nodes[draggingNodeId].x = x; 
     nodes[draggingNodeId].y = y;
     nodes[draggingNodeId].el.style.left = `${x}px`; 
     nodes[draggingNodeId].el.style.top = `${y}px`;
     
-    // Kéo giãn các Cạnh đi theo
     updateEdges();
 });
 
-// 4. Lắng nghe sự kiện nhả chuột (ở bất kỳ đâu) để dừng kéo
-window.addEventListener('mouseup', () => { 
-    draggingNodeId = null; 
-});
+window.addEventListener('mouseup', () => { draggingNodeId = null; });
 
-
-// --- CÁC HÀM THUẬT TOÁN ĐỒ THỊ ---
-
+// --- TỐC ĐỘ MỚI ---
 function getSpeedDelay() {
     const speed = document.getElementById('speed-select').value;
-    if (speed === 'fast') return 500;
-    if (speed === 'slow') return 2000;
-    return 1000;
+    if (speed === 'fast') return 400;   // Nhanh = 400ms
+    if (speed === 'slow') return 1200;  // Chậm = 1200ms
+    return 800;                         // Thường = 800ms
 }
 
 function clearPaths() {
@@ -256,16 +244,15 @@ function animateShortestPath(pathNodes) {
             }
 
             if (i === pathNodes.length - 1) isAnimating = false;
-        }, 100 * i); 
+        }, (getSpeedDelay() / 2) * i); 
     }
 }
 
-// --- HÀM TẠO ĐỒ THỊ BÂY GIỜ ---
+// --- DỰNG ĐỒ THỊ TỪ EDGE LIST & Ô INPUT ---
 function buildGraphFromEdgeList() {
     if (isAnimating) return;
     
     const text = document.getElementById('edge-list-input').value.trim();
-    // Lấy giá trị từ 2 ô nhập mới
     const startInput = document.getElementById('start-node-input').value.trim();
     const targetInput = document.getElementById('target-node-input').value.trim();
     
@@ -284,7 +271,6 @@ function buildGraphFromEdgeList() {
         }
     });
 
-    // Ép thêm đỉnh xuất phát/đích vào tập hợp (nếu người dùng nhập đỉnh mồ côi không có cạnh)
     if (startInput) uniqueNodes.add(startInput);
     if (targetInput) uniqueNodes.add(targetInput);
 
@@ -302,7 +288,6 @@ function buildGraphFromEdgeList() {
         let x = cx + r * Math.cos(index * angleStep);
         let y = cy + r * Math.sin(index * angleStep);
         
-        // LUẬT TẠO ĐỈNH MỚI: Kiểm tra chính xác tên đỉnh với ô nhập
         let type = 'normal';
         if (nodeName === startInput) type = 'start';
         else if (nodeName === targetInput) type = 'target';
